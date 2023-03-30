@@ -1,11 +1,13 @@
 package com.example.movie_demo
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.StrictMode
+import android.view.View
+import android.widget.AdapterView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.allViews
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,15 +23,15 @@ import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     var isLoading = false
     var recyclerView: RecyclerView? = null
     var recyclerViewAdapter: RecyclerViewAdapter? = null
     var swipeRefreshLayout: SwipeRefreshLayout? = null
-var page =0
+    var page = 0
     val data = ArrayList<String>()
-    //var lastscroll = 0
+    val data2 = ArrayList<String>()
+    val data3 = ArrayList<String>()
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +42,7 @@ var page =0
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
         setSupportActionBar(binding.toolbar)
 
-        // this creates a vertical layout Manager
+        //swipey refresh layout for pull refresh
         swipeRefreshLayout!!.setOnRefreshListener(OnRefreshListener {
             swipeRefreshLayout!!.setRefreshing(false)
             recyclerView!!.recycledViewPool.clear()
@@ -59,8 +61,8 @@ var page =0
 
 
 
-
     }
+    //get data to populate the recyclerview
     private fun populateData(){
         StrictMode.setThreadPolicy( StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
         val thread = Thread {
@@ -98,10 +100,17 @@ var page =0
                             ki6 = ki3.getJSONObject("primaryImage").getString("url")
                         }
                         data.add(ki4)
+                        data2.add(ki6)
+                        data3.add(ki3.getString("id"))
                     }
 
                     // This will pass the ArrayList to our Adapter
-                    val recyclerViewAdapter = RecyclerViewAdapter(data)
+                    val recyclerViewAdapter = RecyclerViewAdapter(
+                        applicationContext,
+                        data,
+                        data2,
+                        data3
+                    )
 
                     // Setting the Adapter with the recyclerview
                     recyclerView?.adapter = recyclerViewAdapter
@@ -115,6 +124,7 @@ var page =0
         }
         thread.start()
     }
+    //the scroll listener for the lazy loader
     private fun initScrollListener() {
         recyclerView?.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -127,7 +137,6 @@ var page =0
                 if (!isLoading) {
                     if (linearLayoutManager != null && linearLayoutManager.findLastCompletelyVisibleItemPosition() == data.size - 1) {
                         //bottom of list!
-                        //lastscroll = linearLayoutManager.getPosition(recyclerView)
                         loadMore()
                         isLoading = true
                     }
@@ -138,11 +147,8 @@ var page =0
 
     @SuppressLint("NotifyDataSetChanged")
     private fun loadMore() {
-        //data.add(null.toString())
-        //recyclerViewAdapter?.notifyItemInserted(data.size - 1)
         val handler = Handler()
         handler.postDelayed({
-           //data.removeAt(data.size - 1)
             val scrollPosition: Int = data.size
             recyclerViewAdapter?.notifyItemRemoved(scrollPosition)
             var currentSize = scrollPosition
@@ -183,37 +189,22 @@ var page =0
                                 }
                                 if (!data.contains(ki4) && ki4 != "null"){
                                 data.add(ki4)
-                                    //recyclerView?.clearAnimation()
-                                    //recyclerView?.invalidate()
-                                    //recyclerView?.clearFocus()
-//                                    data.removeAt(i);
-//                                    recyclerView?.removeViewAt(i);
-//                                    recyclerViewAdapter?.notifyItemRemoved(i)
-//                                    recyclerViewAdapter?.notifyItemRangeChanged(i, data.size);
-
                                 }
+                                data2.add(ki6)
+                                data3.add(ki3.getString("id"))
 
                             }
+                            //updating the recyclerview
                             recyclerView?.removeAllViews()
-                            recyclerViewAdapter = RecyclerViewAdapter(data)
+                            recyclerViewAdapter = RecyclerViewAdapter(
+                                applicationContext,
+                                data,
+                                data2,data3)
                             recyclerView?.scrollToPosition(data.size - 10);
                             recyclerViewAdapter?.notifyDataSetChanged()
-                            //recyclerView?.removeAllViews()
-                           // recyclerView?.scrollToPosition(data.size - 1);
-                            //recyclerView?.removeAllViews()
-                            //recyclerView?.scrollToPosition(lastscroll)
-                            //recyclerViewAdapter = RecyclerViewAdapter(data)
-                         //   recyclerViewAdapter?.notifyDataSetChanged()
-                            //Log.d("within",data.toString())
 
-                            // This will pass the ArrayList to our Adapter
-                           // val recyclerViewAdapter = RecyclerViewAdapter(data)
-
-                            // Setting the Adapter with the recyclerview
-                            //recyclerView?.adapter = recyclerViewAdapter
                         }
 
-                        //Log.d("array", ki2.toString())
 
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -225,14 +216,7 @@ var page =0
             }
             isLoading = false
         }, 500)
-        //runOnUiThread {
 
-//            recyclerView?.clearAnimation()
-//            recyclerView?.invalidate()
-//            recyclerView?.clearFocus()
-//            //recyclerViewAdapter = RecyclerViewAdapter(data)
-//            recyclerViewAdapter?.notifyItemRangeInserted(currentSize,kilength)
-        //}
 
     }
 

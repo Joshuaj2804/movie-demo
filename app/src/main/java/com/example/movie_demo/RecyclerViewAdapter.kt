@@ -1,58 +1,73 @@
-package com.example.movie_demo;
+package com.example.movie_demo
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
+import com.squareup.picasso.Picasso
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+class RecyclerViewAdapter(
+    var contexts: Context,
+    itemList: ArrayList<*>?,
+    itemList2: ArrayList<*>,
+    itemList3: ArrayList<*>
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), View.OnClickListener {
+    private val VIEW_TYPE_ITEM = 0
+    private val VIEW_TYPE_LOADING = 1
+    var mItemList: List<*>?
+    var mItemList2: List<*>
+    var mItemList3: List<*>
+    var intent: Intent? = null
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
-
-import java.util.ArrayList;
-import java.util.List;
-
-public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
-    private final int VIEW_TYPE_ITEM = 0;
-    private final int VIEW_TYPE_LOADING = 1;
-
-    public List mItemList;
-
-
-    public RecyclerViewAdapter(ArrayList itemList) {
-
-        mItemList = itemList;
+    init {
+        mItemList = itemList
+        mItemList2 = itemList2
+        mItemList3 = itemList3
     }
 
-    @NonNull
-    @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == VIEW_TYPE_ITEM) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.movie_view_design, parent, false);
-            return new ItemViewHolder(view);
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return if (viewType == VIEW_TYPE_ITEM) {
+            val view =
+                LayoutInflater.from(parent.context)
+                    .inflate(R.layout.movie_view_design, parent, false)
+            ItemViewHolder(view)
         } else {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_loading, parent, false);
-            return new LoadingViewHolder(view);
+            val view =
+                LayoutInflater.from(parent.context).inflate(R.layout.item_loading, parent, false)
+            LoadingViewHolder(view)
         }
     }
 
-    @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
-
-        if (viewHolder instanceof ItemViewHolder) {
-
-            populateItemRows((ItemViewHolder) viewHolder, position);
-        } else if (viewHolder instanceof LoadingViewHolder) {
-            showLoadingView((LoadingViewHolder) viewHolder, position);
+    override fun onBindViewHolder(
+        viewHolder: RecyclerView.ViewHolder,
+        @SuppressLint("RecyclerView") position: Int
+    ) {
+        viewHolder.itemView.setOnClickListener { view ->
+            val sharedPreferences1 = contexts.getSharedPreferences("ids", Context.MODE_PRIVATE)
+            @SuppressLint("CommitPrefEdits") val editor = sharedPreferences1.edit()
+            editor.putString("ids", mItemList3[position] as String?)
+            editor.apply()
+            Log.d("recycid", (mItemList3[position] as String?)!!)
+            val intent = Intent(view.context, DetailsPage::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            contexts.startActivity(intent)
         }
-
+        if (viewHolder is ItemViewHolder) {
+            populateItemRows(viewHolder, position)
+        } else if (viewHolder is LoadingViewHolder) {
+            showLoadingView(viewHolder, position)
+        }
     }
 
-    @Override
-    public int getItemCount() {
-        return mItemList == null ? 0 : mItemList.size();
+    override fun getItemCount(): Int {
+        return if (mItemList == null) 0 else mItemList!!.size
     }
 
     /**
@@ -61,44 +76,59 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
      * @param position
      * @return
      */
-    @Override
-    public int getItemViewType(int position) {
-        return mItemList.get(position) == null ? VIEW_TYPE_LOADING : VIEW_TYPE_ITEM;
+    override fun getItemViewType(position: Int): Int {
+        return if (mItemList!![position] == null) VIEW_TYPE_LOADING else VIEW_TYPE_ITEM
     }
 
+    override fun onClick(view: View) {
+        val sharedPreferences1 = contexts.getSharedPreferences("ids", Context.MODE_PRIVATE)
+        val editor = sharedPreferences1.edit()
 
-    private class ItemViewHolder extends RecyclerView.ViewHolder {
+        //Adding values to editor
 
-        TextView tvItem;
+        //editor.putString("ids", mItemList3.get());
+        //intent =  new Intent(contexts, DetailsPage.class);
+        //contexts.startActivity(intent);
+    }
 
-        public ItemViewHolder(@NonNull View itemView) {
-            super(itemView);
+    private inner class ItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var tvItem: TextView
+        var imageItem: ImageView
 
-            tvItem = itemView.findViewById(R.id.textView);
+        init {
+            imageItem = itemView.findViewById(R.id.imageview)
+            tvItem = itemView.findViewById(R.id.textView)
         }
     }
 
-    private class LoadingViewHolder extends RecyclerView.ViewHolder {
+    private inner class LoadingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var progressBar: ProgressBar
 
-        ProgressBar progressBar;
-
-        public LoadingViewHolder(@NonNull View itemView) {
-            super(itemView);
-            progressBar = itemView.findViewById(R.id.progressBar);
+        init {
+            progressBar = itemView.findViewById(R.id.progressBar)
         }
     }
 
-    private void showLoadingView(LoadingViewHolder viewHolder, int position) {
+    private fun showLoadingView(viewHolder: LoadingViewHolder, position: Int) {
         //ProgressBar would be displayed
-
     }
 
-    private void populateItemRows(ItemViewHolder viewHolder, int position) {
-
-        String item = (String) mItemList.get(position);
-        viewHolder.tvItem.setText(item);
-
+    private fun populateItemRows(viewHolder: ItemViewHolder, position: Int) {
+        val item = mItemList!![position] as String
+        viewHolder.tvItem.text = item
+        val item2 = mItemList2[position] as String
+        if (item2 != "null") {
+            try {
+                Picasso.with(contexts).load(item2).fit().into(viewHolder.imageItem)
+            } catch (ignored: IllegalArgumentException) {
+            }
+        } else {
+            try {
+                Picasso.with(contexts)
+                    .load("https://m.media-amazon.com/images/M/MV5BZDI4MmJiMmMtMzQ3Mi00N2Y0LTlkYmUtYmQ0ZTQ1NzVlZmVjXkEyXkFqcGdeQXVyMDUyOTUyNQ@@._V1_.jpg")
+                    .fit().into(viewHolder.imageItem)
+            } catch (ignored: IllegalArgumentException) {
+            }
+        }
     }
-
-
 }
